@@ -1,12 +1,30 @@
 {
-  "profiles": {
-    "RaboidCaseStudy.API": {
-      "commandName": "Project",
-      "launchBrowser": true,
-      "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
-      },
-      "applicationUrl": "https://localhost:51868;http://localhost:51869"
+    "$schema": "https://json.schemastore.org/launchsettings.json",
+    "iisSettings": {
+        "windowsAuthentication": false,
+        "anonymousAuthentication": true,
+        "iisExpress": {
+            "applicationUrl": "http://localhost:5080",
+            "sslPort": 0
+        }
+    },
+    "profiles": {
+        "RaboidCaseStudy.API": {
+            "commandName": "Project",
+            "launchBrowser": true,
+            "environmentVariables": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_URLS": "http://localhost:5080"
+            },
+            "applicationUrl": "http://localhost:5080",
+            "dotnetRunMessages": true
+        },
+        "Docker": {
+            "commandName": "Docker",
+            "launchBrowser": true,
+            "launchUrl": "swagger",
+            "publishAllPorts": true,
+            "useSSL": false
+        }
     }
-  }
 }

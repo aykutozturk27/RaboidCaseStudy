@@ -55,7 +55,7 @@ public class Seeder
         // Seed a barcode range
         if (await ranges.CountDocumentsAsync(_ => true) == 0)
         {
-            await ranges.InsertOneAsync(new BarcodeRange { Prefix = "8691234", Current = 100000, End = 999999 });
+            await ranges.InsertOneAsync(new BarcodeRange { Prefix = "869123", Current = 100000, End = 999999 });
         }
     }
 }

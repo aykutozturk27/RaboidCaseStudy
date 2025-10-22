@@ -1,23 +1,25 @@
 using System.Net.Http.Json;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 
 public class SchedulerWorker : BackgroundService
 {
     private readonly IHttpClientFactory _httpFactory;
     private readonly ILogger<SchedulerWorker> _logger;
-    private readonly IConfiguration _cfg;
+    private readonly IConfiguration _configuration;
 
-    public SchedulerWorker(IHttpClientFactory httpFactory, ILogger<SchedulerWorker> logger, IConfiguration cfg)
+    public SchedulerWorker(IHttpClientFactory httpFactory, 
+                           ILogger<SchedulerWorker> logger, 
+                           IConfiguration cfg)
     {
-        _httpFactory = httpFactory; _logger = logger; _cfg = cfg;
+        _httpFactory = httpFactory; 
+        _logger = logger; 
+        _configuration = cfg;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         var client = _httpFactory.CreateClient("api");
-        var leaseInterval = _cfg.GetValue("LeaseIntervalSeconds", 5);
-        var clientId = _cfg["ClientId"] ?? "scheduler";
+        var leaseInterval = _configuration.GetValue("LeaseIntervalSeconds", 5);
+        var clientId = _configuration["ClientId"] ?? "scheduler";
         _logger.LogInformation("Scheduler started");
 
         while (!stoppingToken.IsCancellationRequested)
@@ -37,7 +39,7 @@ public class SchedulerWorker : BackgroundService
                     {
                         _logger.LogInformation("Leased job {Id} for store {StoreId}", job.Id, job.StoreId);
                         // Simulate outcome
-                        var ok = Random.Shared.NextDouble() < _cfg.GetValue("CompleteProbability", 0.9);
+                        var ok = Random.Shared.NextDouble() < _configuration.GetValue("CompleteProbability", 0.9);
                         var endpoint = ok ? $"api/jobs/complete/{job.Id}" : $"api/jobs/fail/{job.Id}";
                         await client.PostAsync(endpoint, null, stoppingToken);
                     }

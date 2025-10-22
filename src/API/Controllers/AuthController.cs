@@ -8,46 +8,56 @@ using RaboidCaseStudy.Infrastructure.Persistence;
 using RaboidCaseStudy.Infrastructure.Security;
 
 namespace RaboidCaseStudy.API.Controllers;
+
 [ApiController]
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
-    private readonly IRepository<User> _users;
-    private readonly IJwtTokenService _jwt;
-    private readonly MongoContext _ctx;
-    public AuthController(IRepository<User> users, IJwtTokenService jwt, MongoContext ctx)
+    private readonly IRepository<User> _userRepository;
+    private readonly IJwtTokenService _jwtTokenService;
+    private readonly MongoContext _context;
+
+    public AuthController(IRepository<User> userRepository, 
+                          IJwtTokenService jwtTokenService, 
+                          MongoContext context)
     {
-        _users = users; _jwt = jwt; _ctx = ctx;
+        _userRepository = userRepository; 
+        _jwtTokenService = jwtTokenService; 
+        _context = context;
     }
 
     [HttpPost("register")]
-    public async Task<ActionResult<AuthResponse>> Register(RegisterRequest req, CancellationToken ct)
+    public async Task<ActionResult<AuthResponse>> Register(RegisterRequest request, CancellationToken cancelationToken)
     {
-        var usersCol = _ctx.GetCollection<User>();
-        if (await usersCol.Find(u => u.Email == req.Email).AnyAsync(ct))
+        var usersCollection = _context.GetCollection<User>();
+        if (await usersCollection.Find(u => u.Email == request.Email).AnyAsync(cancelationToken))
             return Conflict("Email already used");
 
-        var (hash, salt) = PasswordHasher.HashPassword(req.Password);
-        var user = await _users.InsertAsync(new User {
-            Email = req.Email,
+        var (hash, salt) = PasswordHasher.HashPassword(request.Password);
+        var user = await _userRepository.InsertAsync(new User {
+            Email = request.Email,
             PasswordHash = hash,
             Salt = salt,
-            Roles = req.Roles?.ToList() ?? new() { "Client" }
-        }, ct);
+            Roles = request.Roles?.ToList() ?? new() { "Client" }
+        }, cancelationToken);
 
-        var token = _jwt.CreateToken(user.Id, user.Email, user.Roles);
+        var token = _jwtTokenService.CreateToken(user.Id, user.Email, user.Roles);
         return new AuthResponse(token, user.Id, user.Email, user.Roles);
     }
 
     [HttpPost("login")]
-    public async Task<ActionResult<AuthResponse>> Login(LoginRequest req, CancellationToken ct)
+    public async Task<ActionResult<AuthResponse>> Login(LoginRequest request, CancellationToken cancelationToken)
     {
-        var usersCol = _ctx.GetCollection<User>();
-        var user = await usersCol.Find(u => u.Email == req.Email).FirstOrDefaultAsync(ct);
-        if (user is null) return Unauthorized("Invalid credentials");
-        if (!PasswordHasher.Verify(req.Password, user.PasswordHash, user.Salt)) return Unauthorized("Invalid credentials");
+        var usersCollection = _context.GetCollection<User>();
+        var user = await usersCollection.Find(u => u.Email == request.Email).FirstOrDefaultAsync(cancelationToken);
 
-        var token = _jwt.CreateToken(user.Id, user.Email, user.Roles);
+        if (user is null) 
+            return Unauthorized("Invalid credentials");
+
+        if (!PasswordHasher.Verify(request.Password, user.PasswordHash, user.Salt)) 
+            return Unauthorized("Invalid credentials");
+
+        var token = _jwtTokenService.CreateToken(user.Id, user.Email, user.Roles);
         return new AuthResponse(token, user.Id, user.Email, user.Roles);
     }
 }

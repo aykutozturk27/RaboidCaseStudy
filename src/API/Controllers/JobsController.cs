@@ -11,40 +11,43 @@ namespace RaboidCaseStudy.API.Controllers;
 [Route("api/[controller]")]
 public class JobsController : ControllerBase
 {
-    private readonly IRepository<Job> _jobs;
-    private readonly MongoContext _ctx;
-    public JobsController(IRepository<Job> jobs, MongoContext ctx) { _jobs = jobs; _ctx = ctx; }
+    private readonly IRepository<Job> _jobRepository;
+    private readonly MongoContext _context;
+    public JobsController(IRepository<Job> jobs, MongoContext context) { _jobRepository = jobs; _context = context; }
 
     [HttpPost("enqueue")]
     [Authorize(Roles = "Admin")]
-    public async Task<ActionResult<Job>> Enqueue(EnqueueJobRequest req, CancellationToken ct)
+    public async Task<ActionResult<Job>> Enqueue(EnqueueJobRequest request, CancellationToken cancelationToken)
     {
-        var job = await _jobs.InsertAsync(new Job {
-            StoreId = req.StoreId,
-            ProductCode = req.ProductCode,
-            ProductName = req.ProductName,
-            Price = req.Price
-        }, ct);
+        var job = await _jobRepository.InsertAsync(new Job {
+            StoreId = request.StoreId,
+            ProductCode = request.ProductCode,
+            ProductName = request.ProductName,
+            Price = request.Price
+        }, cancelationToken);
+
         return job;
     }
 
     [HttpPost("lease")]
     [Authorize(Roles = "Client,Admin")]
-    public async Task<ActionResult<Job?>> Lease(LeaseJobRequest req, CancellationToken ct)
+    public async Task<ActionResult<Job?>> Lease(LeaseJobRequest request, CancellationToken cancelationToken)
     {
-        var col = _ctx.GetCollection<Job>();
+        var col = _context.GetCollection<Job>();
         // Atomically lease the oldest queued job
         var update = Builders<Job>.Update
             .Set(j => j.Status, JobStatus.Leased)
-            .Set(j => j.LeasedByClientId, req.ClientId)
+            .Set(j => j.LeasedByClientId, request.ClientId)
             .Set(j => j.LeasedAtUtc, DateTime.UtcNow)
             .Inc(j => j.Attempt, 1);
+
         var job = await col.FindOneAndUpdateAsync(
             filter: Builders<Job>.Filter.Eq(j => j.Status, JobStatus.Queued),
             update: update,
             options: new FindOneAndUpdateOptions<Job> { ReturnDocument = ReturnDocument.After, Sort = Builders<Job>.Sort.Ascending(j => j.CreatedAtUtc) },
-            cancellationToken: ct
+            cancellationToken: cancelationToken
         );
+
         return job is null ? NoContent() : Ok(job);
     }
 
@@ -52,7 +55,7 @@ public class JobsController : ControllerBase
     [Authorize(Roles = "Client,Admin")]
     public async Task<IActionResult> Complete(string id, CancellationToken ct)
     {
-        var col = _ctx.GetCollection<Job>();
+        var col = _context.GetCollection<Job>();
         var res = await col.UpdateOneAsync(j => j.Id == id, Builders<Job>.Update.Set(j => j.Status, JobStatus.Completed), cancellationToken: ct);
         return res.ModifiedCount == 0 ? NotFound() : Ok();
     }
@@ -61,7 +64,7 @@ public class JobsController : ControllerBase
     [Authorize(Roles = "Client,Admin")]
     public async Task<IActionResult> Fail(string id, CancellationToken ct)
     {
-        var col = _ctx.GetCollection<Job>();
+        var col = _context.GetCollection<Job>();
         var res = await col.UpdateOneAsync(j => j.Id == id, Builders<Job>.Update.Set(j => j.Status, JobStatus.Failed), cancellationToken: ct);
         return res.ModifiedCount == 0 ? NotFound() : Ok();
     }

@@ -1,5 +1,4 @@
 using System.Security.Cryptography;
-using System.Text;
 
 namespace RaboidCaseStudy.Infrastructure.Security;
 public static class PasswordHasher
@@ -11,6 +10,7 @@ public static class PasswordHasher
         var hash = pbkdf2.GetBytes(32);
         return (Convert.ToBase64String(hash), Convert.ToBase64String(salt));
     }
+
     public static bool Verify(string password, string hashBase64, string saltBase64)
     {
         var (hash, _) = HashPassword(password, saltBase64);

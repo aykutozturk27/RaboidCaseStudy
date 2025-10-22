@@ -9,14 +9,14 @@ namespace RaboidCaseStudy.Infrastructure.Security;
 
 public class JwtTokenService : IJwtTokenService
 {
-	private readonly IConfiguration _cfg;
-	public JwtTokenService(IConfiguration cfg) => _cfg = cfg;
+	private readonly IConfiguration _configuration;
+	public JwtTokenService(IConfiguration configuration) => _configuration = configuration;
 
 	public string CreateToken(string userId, string email, IEnumerable<string> roles, TimeSpan? lifetime = null)
 	{
-		var secret = _cfg["Jwt:Secret"] ?? throw new InvalidOperationException("Jwt:Secret missing");
-		var issuer = _cfg["Jwt:Issuer"] ?? "RaboidCaseStudy";
-		var audience = _cfg["Jwt:Audience"] ?? "RaboidCaseStudyClients";
+		var secret = _configuration["Jwt:Secret"] ?? throw new InvalidOperationException("Jwt:Secret missing");
+		var issuer = _configuration["Jwt:Issuer"] ?? "RaboidCaseStudy";
+		var audience = _configuration["Jwt:Audience"] ?? "RaboidCaseStudyClients";
 		var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
 		var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 

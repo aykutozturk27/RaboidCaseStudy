@@ -6,17 +6,18 @@ using RaboidCaseStudy.Infrastructure.Persistence;
 using RaboidCaseStudy.Infrastructure.Security;
 
 namespace RaboidCaseStudy.Infrastructure.Seed;
+
 public class Seeder
 {
-    private readonly MongoContext _ctx;
-    public Seeder(MongoContext ctx) => _ctx = ctx;
+    private readonly MongoContext _context;
+    public Seeder(MongoContext context) => _context = context;
 
     public async Task SeedAsync()
     {
-        var users = _ctx.GetCollection<User>();
-        var roles = _ctx.GetCollection<Role>();
-        var stores = _ctx.GetCollection<Store>();
-        var ranges = _ctx.GetCollection<BarcodeRange>();
+        var users = _context.GetCollection<User>();
+        var roles = _context.GetCollection<Role>();
+        var stores = _context.GetCollection<Store>();
+        var ranges = _context.GetCollection<BarcodeRange>();
 
         // Indexes
         await users.Indexes.CreateOneAsync(new CreateIndexModel<User>(Builders<User>.IndexKeys.Ascending(x => x.Email), new CreateIndexOptions { Unique = true }));

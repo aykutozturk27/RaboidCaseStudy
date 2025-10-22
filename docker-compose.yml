@@ -1,0 +1,18 @@
+version: "3.9"
+services:
+  mongo:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+  api:
+    build: ./src/API
+    environment:
+      - ASPNETCORE_URLS=http://+:5080
+    ports:
+      - "5080:5080"
+    depends_on:
+      - mongo
+volumes:
+  mongo_data:
